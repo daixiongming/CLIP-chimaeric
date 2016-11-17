@@ -4,7 +4,6 @@
 use Modern::Perl;
 use autodie;
 use Getopt::Long::Descriptive;
-use File::Path qw(make_path);
 
 # Load GenOO library
 use GenOO::Data::File::FASTA;
@@ -13,11 +12,13 @@ use GenOO::RegionCollection::Factory;
 # Define and read command line options
 my ($opt, $usage) = describe_options(
 	'%c %o',
-	['sam=s', 'SAM file', { required => 1}],
-	['chr_dir=s', 'directory with chromosome fasta files', { required => 1}],
-	['out-length=i', 'if set then output reads will be extended on both sides to reach this length'],
-	['max-length=i', 'if set then output reads will be discarded if longer than this'],
-	['help|h', 'print usage message and exit'],
+	["Print in FASTA format the genomic sequence of each alignment in the input SAM file."],
+	[],
+	['sam=s', 'Input SAM file', { required => 1}],
+	['chr_dir=s', 'Directory with chromosome fasta files', { required => 1}],
+	['out-length=i', 'If set, output sequences will be extended on both sides up to INT'],
+	['max-length=i', 'If set, reads longer than INT are discarded'],
+	['help|h', 'Print usage message and exit'],
 );
 print($usage->text), exit if $opt->help;
 
@@ -27,6 +28,7 @@ my $feats_col = GenOO::RegionCollection::Factory->create('SAM', {
 })->read_collection;
 my @feats = sort {$a->rname cmp $b->rname} $feats_col->all_records;
 
+warn "Extracting sequences\n";
 my ($open_rname_file, $rname_seq) = ('', '');
 foreach my $r (@feats) {
 	my $rname_file = $opt->chr_dir . $r->rname . '.fa';

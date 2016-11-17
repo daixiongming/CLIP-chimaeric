@@ -7,27 +7,29 @@ use Getopt::Long::Descriptive;
 # Define and read command line options
 my ($opt, $usage) = describe_options(
 	"Usage: %c %o",
-	["Cut selected columns from table"],
+	["Join entries from two FASTQ files by name. Output a table file where the first column corresponds to the entry name and the next two columns are the sequences from the input FASTQ files corresponding to that name."],
 	[],
 	['ifile1=s',
-		'fasta file of sequences. Use - for STDIN',
+		'Input FASTA file 1. Use - for STDIN',
 		{required => 1}],
 	['ifile2=s',
-		'fasta file of sequences. Use - for STDIN',
+		'Input FASTA file 2. Use - for STDIN',
 		{required => 1}],
-	['shuffle', 'shuffle reads keeping size'],
+	['shuffle', 'If set, a random join that preserves sequence sizes is performed'],
 	['verbose|v', 'Print progress'],
 	['help|h', 'Print usage and exit',
 		{shortcircuit => 1}],
 );
 print($usage->text), exit if $opt->help; 
 
-warn "opening first file\n" if $opt->verbose;
-my $FN = filehandle_for($opt->ifile1);
+if ($opt->ifile1 eq '-' and $opt->ifile2 eq '-') {
+	die "cannot use STDIN for both input files\n";
+}
 
 my %sequence1;
 my %random_seq_by_size;
-
+warn "reading file 1\n" if $opt->verbose;
+my $FN = filehandle_for($opt->ifile1);
 while (my $line = <$FN>){
 	if ($line =~ /^>/){
 		my $header = $line;
@@ -43,9 +45,8 @@ while (my $line = <$FN>){
 }
 close $FN;
 
-warn "opening second file\n" if $opt->verbose;
+warn "reading file 2 and joining\n" if $opt->verbose;
 my $IN = filehandle_for($opt->ifile2);
-
 while (my $line = $IN->getline()){
 	if ($line =~ /^>/){
 		my $header = $line;

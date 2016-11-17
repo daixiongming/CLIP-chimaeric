@@ -7,13 +7,13 @@ use Getopt::Long::Descriptive;
 # Define and read command line options
 my ($opt, $usage) = describe_options(
 	"Usage: %c %o",
-	["Cut selected columns from table"],
+	["Print FASTA entries whose header matches any of the entries in another FASTA file."],
 	[],
 	['ifile=s',
-		'fasta file of sequences. Use - for STDIN',
+		'Input FASTA file with sequences to be filtered. Use - for STDIN',
 		{required => 1}],
 	['ref-file=s',
-		'fasta file to filter with. Use - for STDIN',
+		'Input FASTA file to filter with. Use - for STDIN',
 		{required => 1}],
 	['verbose|v', 'Print progress'],
 	['help|h', 'Print usage and exit',
@@ -21,11 +21,13 @@ my ($opt, $usage) = describe_options(
 );
 print($usage->text), exit if $opt->help; 
 
-warn "opening filter file\n" if $opt->verbose;
-my $FN = filehandle_for($opt->ref_file);
+if ($opt->ifile eq '-' and $opt->ref_file eq '-') {
+	die "cannot use STDIN for both input files\n";
+}
 
 my %accepted_name;
-
+warn "opening filter file\n" if $opt->verbose;
+my $FN = filehandle_for($opt->ref_file);
 while (my $line = <$FN>){
 	if ($line =~ /^>/){
 		my $header = $line;
@@ -37,8 +39,6 @@ close $FN;
 
 warn "opening input file\n" if $opt->verbose;
 my $IN = filehandle_for($opt->ifile);
-
-my %names_to_pass;
 while (my $line = $IN->getline()){
 	if ($line =~ /^>/){
 		my $header = $line;

@@ -7,13 +7,11 @@ use Getopt::Long::Descriptive;
 # Define and read command line options
 my ($opt, $usage) = describe_options(
 	"Usage: %c %o",
-	["Cut selected columns from table"],
+	["Prints the alignment score for sequences defined in each line of the input table."],
 	[],
-	['ifile=s',
-		'file of pairs. Use - for STDIN',
-		{required => 1}],
+	['ifile=s', 'Tab delimited table of pairs. Use - for STDIN', {required => 1}],
 	['verbose|v', 'Print progress'],
-	['test=i', 'only run for few reads'],
+	['test=i', 'Only run alignmet on the first INT reads'],
 	['help|h', 'Print usage and exit',
 		{shortcircuit => 1}],
 );
@@ -22,6 +20,7 @@ print($usage->text), exit if $opt->help;
 warn "opening input file\n" if $opt->verbose;
 my $IN = filehandle_for($opt->ifile);
 
+warn "doing alignment\n" if $opt->verbose;
 my $counter = 0;
 while (my $line = $IN->getline()){
 	chomp $line;

@@ -7,25 +7,25 @@ use Getopt::Long::Descriptive;
 # Define and read command line options
 my ($opt, $usage) = describe_options(
 	"Usage: %c %o",
-	["Cut selected columns from table"],
+	["Process two SAM files, each with an aligned mate from a small-large pair, and select the pairs with the highest number of genome matching nucleotides for each group of pairs."],
 	[],
 	['ifile1=s',
-		'SAM file of pairs. Use - for STDIN',
+		'Input SAM file with mate 1 reads. Use - for STDIN',
 		{required => 1}],
 	['ifile2=s',
-		'SAM file of pairs. Use - for STDIN',
+		'Input SAM file with mate 2 reads. Use - for STDIN',
 		{required => 1}],
 	['ofile1=s',
-		'output file for ifile1.',
+		'Output SAM file with selected mate 1 reads.',
 		{required => 1}],
 	['ofile2=s',
-		'output file for ifile2.',
+		'Output SAM file with selected mate 2 reads.',
 		{required => 1}],
 	['removen',
-		'flag to remove pairs containing N nucleotides',
+		'If set, discard pairs containing N nucleotides',
 		{default => 0}],
 	['removeintrons',
-		'flag to remove pairs containing intron',
+		'If set, discard pairs that contain Ns in the alignment cigar string',
 		{default => 0}],
 	['verbose|v', 'Print progress'],
 	['help|h', 'Print usage and exit',
@@ -33,14 +33,14 @@ my ($opt, $usage) = describe_options(
 );
 print($usage->text), exit if $opt->help; 
 
-
-warn "opening input file\n" if $opt->verbose;
-my $IN1 = filehandle_for($opt->ifile1);
-my $IN2 = filehandle_for($opt->ifile2);
+if ($opt->ifile1 eq '-' and $opt->ifile2 eq '-') {
+	die "cannot use STDIN for both input files\n";
+}
 
 my %read;
 my %best_read_index;
-
+warn "opening input file 1\n" if $opt->verbose;
+my $IN1 = filehandle_for($opt->ifile1);
 while (my $line = $IN1->getline()){
 	chomp $line;
 	my $bitflag = (split("\t", $line))[1];
@@ -66,6 +66,8 @@ while (my $line = $IN1->getline()){
 }
 close $IN1;
 
+warn "opening input file 2\n" if $opt->verbose;
+my $IN2 = filehandle_for($opt->ifile2);
 while (my $line = $IN2->getline()){
 	chomp $line;
 	my $bitflag = (split("\t", $line))[1];
@@ -104,10 +106,7 @@ close $IN2;
 ### we have picked the best pairs ###
 
 $IN1 = filehandle_for($opt->ifile1);
-$IN2 = filehandle_for($opt->ifile2);
 open (my $OUT1, ">", $opt->ofile1) or die;
-open (my $OUT2, ">", $opt->ofile2) or die;
-
 while (my $line = $IN1->getline()){
 	chomp $line;
 	my $bitflag = (split("\t", $line))[1];
@@ -126,8 +125,8 @@ while (my $line = $IN1->getline()){
 }
 close $IN1;
 
-
-
+$IN2 = filehandle_for($opt->ifile2);
+open (my $OUT2, ">", $opt->ofile2) or die;
 while (my $line = $IN2->getline()){
 	chomp $line;
 	my $bitflag = (split("\t", $line))[1];
