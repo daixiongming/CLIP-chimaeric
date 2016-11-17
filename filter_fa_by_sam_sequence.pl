@@ -7,25 +7,29 @@ use Getopt::Long::Descriptive;
 # Define and read command line options
 my ($opt, $usage) = describe_options(
 	"Usage: %c %o",
-	["Cut selected columns from table"],
+	["Print FASTA entries whose sequence match any of the query sequences defined in a SAM file."],
 	[],
 	['ifile=s',
-		'fasta file of sequences. Use - for STDIN',
+		'Input FASTA file with sequences to be filtered. Use - for STDIN',
 		{required => 1}],
 	['ffile=s',
-		'SAM file to filter with. Use - for STDIN',
+		'Input SAM file to filter with. Use - for STDIN',
 		{required => 1}],
 	['min=i',
-		'minimum length of sequences to be considered',
+		'Minimum length of sequences to be considered',
 	],
 	['max=i',
-		'maximum length of sequences to be considered',
+		'Maximum length of sequences to be considered',
 	],
 	['verbose|v', 'Print progress'],
 	['help|h', 'Print usage and exit',
 		{shortcircuit => 1}],
 );
 print($usage->text), exit if $opt->help; 
+
+if ($opt->ifile eq '-' and $opt->ffile eq '-') {
+	die "cannot use STDIN for both input files\n";
+}
 
 warn "opening filter file\n" if $opt->verbose;
 my $FN = filehandle_for($opt->ffile);

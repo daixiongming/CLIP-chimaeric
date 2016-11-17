@@ -7,28 +7,28 @@ use Getopt::Long::Descriptive;
 # Define and read command line options
 my ($opt, $usage) = describe_options(
 	"Usage: %c %o",
-	["Cut selected columns from table"],
+	["Takes as input a FASTQ file and splits the sequence of each entry based on specified sizes. For each new entry an integer corresponding to the break point is appended on the header. For each input entry two new entries with the same header are created (a small and a large) and are output in different files."],
 	[],
 	['ifile=s',
-		'FASTQ file of unmapped reads. Use - for STDIN',
+		'Input FASTQ file. Use - for STDIN',
 		{required => 1}],
 	['out-small=s',
-		'FASTA file for small reads output',
+		'Output FASTA file for the smaller split reads',
 		{required => 1}],
 	['out-large=s',
-		'FASTA file for large reads output',
+		'Output FASTA file for the larger split reads',
 		{required => 1}],
 	['min-small=i',
-		'Minimum Length for small read',
+		'Minimum length for small read',
 		{default => 0}],
 	['min-large=i',
-		'Minimum Length for large read',
+		'Minimum length for large read',
 		{default => 0}],
 	['max-small=i',
-		'Maximum Length for small read',
+		'Maximum length for small read',
 		{default => 100}],
 	['max-large=i',
-		'Maximum Length for large read',
+		'Maximum length for large read',
 		{default => 100}],
 	['verbose|v', 'Print progress'],
 	['help|h', 'Print usage and exit',
@@ -44,9 +44,11 @@ my $max_large = $opt->max_large;
 warn "opening input file\n" if $opt->verbose;
 my $IN = filehandle_for($opt->ifile);
 
-open SOUT, ">", $opt->out_small;
-open LOUT, ">", $opt->out_large;
+my ($SOUT, $LOUT);
+open ($SOUT, ">", $opt->out_small);
+open ($LOUT, ">", $opt->out_large);
 
+warn "splitting reads\n" if $opt->verbose;
 while (my $line = $IN->getline()){
 	if ($line =~ /^@/){ #first line of 4 line block in fastq
 		chomp $line;
@@ -56,10 +58,6 @@ while (my $line = $IN->getline()){
 		chomp $seq;
 		$IN->getline(); #skip empty line
 		$IN->getline(); #skip quality line
-		
-# 		# Check if read is within length range
-		
-# 		unless (($min1 + $min2 <= $read_length) and ($max1 + $max2 >= $read_length)){next;}
 		
 		my $read_length = length($seq);
 		for (my $i = 1; $i < $read_length; $i++){
@@ -75,8 +73,8 @@ while (my $line = $IN->getline()){
 				(length($read2) <= $max_large) and
 				(length($read1) <= length($read2))
 			){
-				print SOUT ">".$name."-".$i."\n".$read1."\n";
-				print LOUT ">".$name."-".$i."\n".$read2."\n";
+				print $SOUT ">".$name."-".$i."\n".$read1."\n";
+				print $LOUT ">".$name."-".$i."\n".$read2."\n";
 			}
 			elsif (
 				(length($read2) >= $min_small) and
@@ -85,8 +83,8 @@ while (my $line = $IN->getline()){
 				(length($read1) <= $max_large) and
 				(length($read2) <= length($read1))
 			){
-				print SOUT ">".$name."-".$i."\n".$read2."\n";
-				print LOUT ">".$name."-".$i."\n".$read1."\n";
+				print $SOUT ">".$name."-".$i."\n".$read2."\n";
+				print $LOUT ">".$name."-".$i."\n".$read1."\n";
 			}
 		}
 	}
