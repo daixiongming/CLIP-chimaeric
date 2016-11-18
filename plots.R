@@ -76,24 +76,4 @@ hist(
 	freq=TRUE
 )
 
-hist(
-	idata$V7[idata$V6 >= 9],
-	xlim=c(0,200),
-	col=rgb(0, 0, 1, 0.25),
-	breaks=seq(-0.5, 200.5, 1),
-	xaxp = c(0, 200, 200),
-	freq=TRUE,
-	xlab="Blue = real, Red = shuffled (9 and over)",
-	main="Alignment Center Pos Distribution"
-)
-
-hist(
-	sdata$V7[sdata$V6 >= 9],
-	xlim=c(0,200),
-	col=rgb(1, 0, 0, 0.25),
-	breaks=seq(-0.5, 200.5, 1),
-	add=TRUE,
-	freq=TRUE
-)
-
 dev.off()
