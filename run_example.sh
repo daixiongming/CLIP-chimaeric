@@ -17,32 +17,32 @@ do
 		--min-small 23 \
 		--max-small 29 \
 		--min-large 30 \
-		--out-small results/$samplename/splitreads.small.fa \
-		--out-large results/$samplename/splitreads.large.fa
+		--out-small results/$samplename/fragments.small.fa \
+		--out-large results/$samplename/fragments.large.fa
 
-	## FILTER SMALL READS WITH LIBRARY OF KNOWN SMALL READS
+	## FILTER SMALL FRAGMENTS WITH LIBRARY OF KNOWN SMALL FRAGMENTS
 
 	cat data/$samplename/aligned/$samplename-smallreads.Aligned.sortedByCoord.out.bam \
 		| samtools-1.2 view \
 			-h \
 			- \
 		| perl dev/filter_fa_by_sam_sequence.pl \
-			--ifile results/$samplename/splitreads.small.fa \
+			--ifile results/$samplename/fragments.small.fa \
 			--ffile - \
-		> results/$samplename/splitreads.small.filtered.fa
+		> results/$samplename/fragments.small.filtered.fa
 
-	## FILTER LARGE READS WITH SMALL READS
+	## FILTER LARGE FRAGMENTS WITH SMALL FRAGMENTS
 
 	perl dev/filter_by_name.pl \
-		--ifile results/$samplename/splitreads.large.fa \
-		--ref-file results/$samplename/splitreads.small.filtered.fa \
-		> results/$samplename/splitreads.large.filtered.fa
+		--ifile results/$samplename/fragments.large.fa \
+		--ref-file results/$samplename/fragments.small.filtered.fa \
+		> results/$samplename/fragments.large.filtered.fa
 
-	### ALIGN LARGE READS
+	### ALIGN LARGE FRAGMENTS
 
 	STAR-2.5.2b \
 		--genomeDir data/genome/$species/ \
-		--readFilesIn results/$samplename/splitreads.large.filtered.fa \
+		--readFilesIn results/$samplename/fragments.large.filtered.fa \
 		--readFilesCommand cat \
 		--runThreadN 12 \
 		--outSAMtype SAM \
@@ -52,15 +52,15 @@ do
 		--outFilterIntronMotifs RemoveNoncanonicalUnannotated \
 		--outFilterMatchNmin 8 \
 		--outFilterMatchNminOverLread 0.9 \
-		--outFileNamePrefix results/$samplename/splitreads.large.filtered. \
+		--outFileNamePrefix results/$samplename/fragments.large.filtered. \
 		--sjdbOverhang 100 \
 		--sjdbGTFfile /store/data/species/$species/annotation/UCSC_gene_parts_genename.gtf
 
-	### ALIGN SMALL READS
+	### ALIGN SMALL FRAGMENTS
 
 	STAR-2.5.2b \
 		--genomeDir data/genome/$species/ \
-		--readFilesIn results/$samplename/splitreads.small.filtered.fa \
+		--readFilesIn results/$samplename/fragments.small.filtered.fa \
 		--readFilesCommand cat \
 		--runThreadN 12 \
 		--outSAMtype SAM \
@@ -70,7 +70,7 @@ do
 		--outFilterIntronMotifs RemoveNoncanonicalUnannotated \
 		--outFilterMatchNmin 8 \
 		--outFilterMatchNminOverLread 0.9 \
-		--outFileNamePrefix results/$samplename/splitreads.small.filtered. \
+		--outFileNamePrefix results/$samplename/fragments.small.filtered. \
 		--sjdbOverhang 100 \
 		--sjdbGTFfile /store/data/species/$species/annotation/UCSC_gene_parts_genename.gtf
 		
@@ -78,58 +78,58 @@ do
 	### FILTERS 
 	### 
 
-	### LARGE READS ON GENES
+	### LARGE FRAGMENTS ON GENES
 
-	cat results/$samplename/splitreads.large.filtered.Aligned.out.sam \
+	cat results/$samplename/fragments.large.filtered.Aligned.out.sam \
 		| samtools-1.2 view \
 			-b \
 			-T data/genome/$species/genome.fa \
 			- \
-		> results/$samplename/splitreads.large.filtered.Aligned.bam
+		> results/$samplename/fragments.large.filtered.Aligned.bam
 
 	bedtools intersect \
-		-a results/$samplename/splitreads.large.filtered.Aligned.bam \
+		-a results/$samplename/fragments.large.filtered.Aligned.bam \
 		-b /store/data/species/$species/annotation/UCSC_gene_parts_genename.gtf \
 		-split \
 		-u \
 	| samtools-1.2 view \
 		- \
-		> results/$samplename/splitreads.large.filtered.Aligned.OnGenes.sam
+		> results/$samplename/fragments.large.filtered.Aligned.OnGenes.sam
 
 	### KEEP UNIQUE PAIR
 
 	perl dev/filter_best_pairs.pl \
-		--ifile1 results/$samplename/splitreads.large.filtered.Aligned.OnGenes.sam \
-		--ifile2 results/$samplename/splitreads.small.filtered.Aligned.out.sam \
-		--ofile1 results/$samplename/splitreads.large.filtered.Aligned.OnGenes.paired.sam \
-		--ofile2 results/$samplename/splitreads.small.filtered.Aligned.paired.sam
+		--ifile1 results/$samplename/fragments.large.filtered.Aligned.OnGenes.sam \
+		--ifile2 results/$samplename/fragments.small.filtered.Aligned.out.sam \
+		--ofile1 results/$samplename/fragments.large.filtered.Aligned.OnGenes.paired.sam \
+		--ofile2 results/$samplename/fragments.small.filtered.Aligned.paired.sam
 
 	### EXTEND LARGE READ TO 200 nt > FASTA
 
 	perl dev/sam-to-fasta.pl \
-		--sam results/$samplename/splitreads.large.filtered.Aligned.OnGenes.paired.sam \
+		--sam results/$samplename/fragments.large.filtered.Aligned.OnGenes.paired.sam \
 		--chr_dir /store/data/UCSC/$species/chromosomes/ \
 		--out-length 200 \
-		> results/$samplename/splitreads.large.filtered.Aligned.OnGenes.paired.200nt.fa
+		> results/$samplename/fragments.large.filtered.Aligned.OnGenes.paired.200nt.fa
 		
 	### SMALL READ TO FASTA NO EXTENSION
 
 	perl dev/sam-to-fasta.pl \
-		--sam results/$samplename/splitreads.small.filtered.Aligned.paired.sam \
+		--sam results/$samplename/fragments.small.filtered.Aligned.paired.sam \
 		--chr_dir /store/data/UCSC/$species/chromosomes/ \
 		--max-length 29 \
-		> results/$samplename/splitreads.small.filtered.Aligned.paired.fa
+		> results/$samplename/fragments.small.filtered.Aligned.paired.fa
 
-	### MAKE ALIGNMENT FILE -> SMALL AND LARGE READS TOGETHER
+	### MAKE ALIGNMENT FILE -> SMALL AND LARGE FRAGMENTS TOGETHER
 
 	perl dev/make_pairs_table.pl \
-		--ifile1 results/$samplename/splitreads.small.filtered.Aligned.paired.fa \
-		--ifile2 results/$samplename/splitreads.large.filtered.Aligned.OnGenes.paired.200nt.fa \
+		--ifile1 results/$samplename/fragments.small.filtered.Aligned.paired.fa \
+		--ifile2 results/$samplename/fragments.large.filtered.Aligned.OnGenes.paired.200nt.fa \
 		> results/$samplename/pairs.tab
 
 	perl dev/make_pairs_table.pl \
-		--ifile1 results/$samplename/splitreads.small.filtered.Aligned.paired.fa \
-		--ifile2 results/$samplename/splitreads.large.filtered.Aligned.OnGenes.paired.200nt.fa \
+		--ifile1 results/$samplename/fragments.small.filtered.Aligned.paired.fa \
+		--ifile2 results/$samplename/fragments.large.filtered.Aligned.OnGenes.paired.200nt.fa \
 		--shuffle \
 		> results/$samplename/pairs.shuffled.tab
 
