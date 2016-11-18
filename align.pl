@@ -7,11 +7,13 @@ use Getopt::Long::Descriptive;
 # Define and read command line options
 my ($opt, $usage) = describe_options(
 	"Usage: %c %o",
-	["Prints the alignment score for sequences defined in each line of the input table."],
+	["Cut selected columns from table"],
 	[],
-	['ifile=s', 'Tab delimited table of pairs. Use - for STDIN', {required => 1}],
+	['ifile=s',
+		'file of pairs. Use - for STDIN',
+		{required => 1}],
 	['verbose|v', 'Print progress'],
-	['test=i', 'Only run alignmet on the first INT reads'],
+	['test=i', 'only run for few reads'],
 	['help|h', 'Print usage and exit',
 		{shortcircuit => 1}],
 );
@@ -20,18 +22,18 @@ print($usage->text), exit if $opt->help;
 warn "opening input file\n" if $opt->verbose;
 my $IN = filehandle_for($opt->ifile);
 
-warn "doing alignment\n" if $opt->verbose;
 my $counter = 0;
 while (my $line = $IN->getline()){
 	chomp $line;
 	my ($name, $seqA, $seqB) = split("\t", $line);
 	my $revcomp_seqA = revcomp($seqA);
 	my ($alignment_score, $bindA, $bindB, $align1, $align2) = align($revcomp_seqA, $seqB);
-	my $number_of_matches = add_matches($bindA);
+	my $number_of_matches = add_matches($bindB);
 	my $center_of_binding_loc_on_lgclip = center_of_binding_loc_on_lgclip($bindB, $number_of_matches);
 	
 	if ($opt->verbose){ warn join("\n", $alignment_score, $revcomp_seqA, $seqB, $align1, $align2)."\n";}
-	print $line."\t".length($seqA)."\t".length($seqB)."\t".$alignment_score."\t".$center_of_binding_loc_on_lgclip."\n";
+	
+	print join("\t", $line, length($seqA), length($seqB), $alignment_score, $center_of_binding_loc_on_lgclip, join("", @{$bindB}), join("", @{$bindA}), $revcomp_seqA)."\n";
 	
 	if (defined $opt->test){
 		$counter++;
@@ -141,16 +143,65 @@ sub align {
 
 	my $align1 = "";
 	my $align2 = "";
-
+	my @match_cnt_j = dots(length($seq1));
+	my @match_cnt_i = dots(length($seq2));
+	
 	my $random_max_index = int(rand @max_i);
-
-	my $j = $max_j[$random_max_index];
-	my $i = $max_i[$random_max_index];
+	my $ori_j = $max_j[$random_max_index];
+	my $ori_i = $max_i[$random_max_index];
+		
+	### get end i,j
+	my $j = $ori_j;
+	my $i = $ori_i;
+	while ($matrix[$i][$j]{pointer} ne "none"){
+		if ($matrix[$i][$j]{pointer} eq "diagonal") {$i--; $j--;}
+		elsif ($matrix[$i][$j]{pointer} eq "left") {$j--;}
+		elsif ($matrix[$i][$j]{pointer} eq "up") {$i--;}
+	}
+	
+	### add S (soft-clip) to positions upstream
+	my $end_j = $j;
+	my $end_i = $i;
+	while (($i >= 0) and ($j >= 0)){
+		if (substr($seq1, $j, 1) eq substr($seq2, $i, 1)){
+			$match_cnt_j[$j] = 'm';
+			$match_cnt_i[$i] = 'm';
+		}
+		else {
+			$match_cnt_j[$j] = 's';
+			$match_cnt_i[$i] = 's';		
+		}
+		$i--;
+		$j--;
+	}
+	
+	### add S (soft-clip) to positions downstream
+	$j = $ori_j;
+	$i = $ori_i;
+	while (($i < length($seq2)) and ($j < length($seq1))){
+		if (substr($seq1, $j, 1) eq substr($seq2, $i, 1)){
+			$match_cnt_j[$j] = 'm';
+			$match_cnt_i[$i] = 'm';
+		}
+		else {
+			$match_cnt_j[$j] = 's';
+			$match_cnt_i[$i] = 's';		
+		}
+		
+		$i++;
+		$j++;
+	}
+	
+	
+	
+	warn join("\t", $ori_i, $ori_j, $end_i, $end_j)."\n";
 # 	print $i.",".$j."\t".$max_score."\n";
+	
 
-	my @match_cnt_i;
-	my @match_cnt_j;
 
+	### TRACKBACK
+	$i = $ori_i;
+	$j = $ori_j;
 	while (1) {
 		last if $matrix[$i][$j]{pointer} eq "none";
 		
@@ -159,25 +210,37 @@ sub align {
 			$align2 .= substr($seq2, $i-1, 1);
 			
 			if (substr($seq1, $j-1, 1) eq substr($seq2, $i-1, 1)){
-				$match_cnt_j[$j-1]++;
-				$match_cnt_i[$i-1]++;
+				$match_cnt_j[$j-1] = 1;
+				$match_cnt_i[$i-1] = 1;
 			}
+			else {
+				$match_cnt_j[$j-1] = '0';
+				$match_cnt_i[$i-1] = '0';
+			}
+			
 			$i--; $j--;
 		}
 		elsif ($matrix[$i][$j]{pointer} eq "left") {
 			$align1 .= substr($seq1, $j-1, 1);
+			$match_cnt_j[$j-1] = 'g';
 			$align2 .= "-";
 			$j--;
 		}
 		elsif ($matrix[$i][$j]{pointer} eq "up") {
 			$align1 .= "-";
 			$align2 .= substr($seq2, $i-1, 1);
+			$match_cnt_i[$i-1] = 'g';
 			$i--;
 		}   
 	}
 
 	$align1 = reverse $align1;
 	$align2 = reverse $align2;
+	
+	warn join("", @match_cnt_i)."\n";
+	warn join("", @match_cnt_j)."\n";
+	warn $seq1."\n";
+	
 	
 	return ($max_score, \@match_cnt_j, \@match_cnt_i, $align1, $align2);
 }
@@ -188,7 +251,7 @@ sub center_of_binding_loc_on_lgclip{
 	my @binding = @{$binding};
 	my $count=0;
 	for (my $i = 0; $i < @binding; $i++){
-		if ((defined $binding[$i]) and ($binding[$i] == 1)){
+		if ((defined $binding[$i]) and ($binding[$i] eq '1')){
 			$count++;
 			if ($count == $goal){
 				return $i;
@@ -201,11 +264,20 @@ sub add_matches{
 	my ($inref) = @_;
 	my $total = 0;
 	foreach my $val (@$inref){
-		if (defined $val){
-			$total+=$val;
+		if ((defined $val) and ($val eq '1')){
+			$total++;
 		}
 	}
 	return $total;
+}
+
+sub dots {
+	my ($N) = @_;
+	my @array;
+	for (my $i = 0; $i < $N; $i++){
+		push @array, '.';
+	}
+	return @array;
 }
 
 
