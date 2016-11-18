@@ -20,7 +20,7 @@ do
 		--out-small results/$samplename/fragments.small.fa \
 		--out-large results/$samplename/fragments.large.fa
 
-	## FILTER SMALL FRAGMENTS WITH LIBRARY OF KNOWN SMALL FRAGMENTS
+	## FILTER SMALL FRAGMENTS WITH LIBRARY OF KNOWN SMALL RNAs
 
 	cat data/$samplename/aligned/$samplename-smallreads.Aligned.sortedByCoord.out.bam \
 		| samtools-1.2 view \
@@ -78,7 +78,7 @@ do
 	### FILTERS 
 	### 
 
-	### LARGE FRAGMENTS ON GENES
+	### FILTER LARGE FRAGMENTS ON GENES
 
 	cat results/$samplename/fragments.large.filtered.Aligned.out.sam \
 		| samtools-1.2 view \
@@ -104,7 +104,7 @@ do
 		--ofile1 results/$samplename/fragments.large.filtered.Aligned.OnGenes.paired.sam \
 		--ofile2 results/$samplename/fragments.small.filtered.Aligned.paired.sam
 
-	### EXTEND LARGE READ TO 200 nt > FASTA
+	### EXTEND LARGE FRAGMENT TO 200 nt > FASTA
 
 	perl dev/sam-to-fasta.pl \
 		--sam results/$samplename/fragments.large.filtered.Aligned.OnGenes.paired.sam \
@@ -112,7 +112,7 @@ do
 		--out-length 200 \
 		> results/$samplename/fragments.large.filtered.Aligned.OnGenes.paired.200nt.fa
 		
-	### SMALL READ TO FASTA NO EXTENSION
+	### SMALL FRAGMENT TO FASTA NO EXTENSION
 
 	perl dev/sam-to-fasta.pl \
 		--sam results/$samplename/fragments.small.filtered.Aligned.paired.sam \
@@ -143,7 +143,7 @@ do
 		--ifile results/$samplename/pairs.shuffled.tab \
 		> results/$samplename/pairs.shuffled.aligned.tab
 		
-	### MAKE PLOT
+	### MAKE PLOTS
 
 	Rscript dev/plots.R \
 		--ifile results/$samplename/pairs.aligned.tab \
