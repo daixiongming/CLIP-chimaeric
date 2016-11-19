@@ -192,13 +192,6 @@ sub align {
 		$j++;
 	}
 	
-	
-	
-	warn join("\t", $ori_i, $ori_j, $end_i, $end_j)."\n";
-# 	print $i.",".$j."\t".$max_score."\n";
-	
-
-
 	### TRACKBACK
 	$i = $ori_i;
 	$j = $ori_j;
@@ -236,11 +229,6 @@ sub align {
 
 	$align1 = reverse $align1;
 	$align2 = reverse $align2;
-	
-	warn join("", @match_cnt_i)."\n";
-	warn join("", @match_cnt_j)."\n";
-	warn $seq1."\n";
-	
 	
 	return ($max_score, \@match_cnt_j, \@match_cnt_i, $align1, $align2);
 }
