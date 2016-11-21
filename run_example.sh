@@ -72,15 +72,17 @@ do
 		--outFilterMatchNminOverLread 0.9 \
 		--outFileNamePrefix results/$samplename/fragments.small.filtered. \
 		--sjdbOverhang 100 \
-		--sjdbGTFfile /store/data/species/$species/annotation/UCSC_gene_parts_genename.gtf
+		--sjdbGTFfile /store/data/species/$species/annotation/UCSC_gene_parts_genename.gtf \
+		--outFilterMultimapNmax 50
 		
 	### 
 	### FILTERS 
 	### 
 
-	### FILTER LARGE FRAGMENTS ON GENES
+	### FILTER LARGE FRAGMENTS UNIQUELY MAPPED AND ON GENES
 
 	cat results/$samplename/fragments.large.filtered.Aligned.out.sam \
+		| grep 'NH:i:1' \
 		| samtools-1.2 view \
 			-b \
 			-T data/genome/$species/genome.fa \
