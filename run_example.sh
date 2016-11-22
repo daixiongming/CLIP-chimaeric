@@ -41,39 +41,34 @@ do
 	### ALIGN LARGE FRAGMENTS
 
 	STAR-2.5.2b \
-		--genomeDir data/genome/$species/ \
+		--genomeDir data/genome/dm3/ \
 		--readFilesIn results/$samplename/fragments.large.filtered.fa \
 		--readFilesCommand cat \
 		--runThreadN 12 \
 		--outSAMtype SAM \
 		--outSAMattributes All \
 		--outFilterMultimapScoreRange 0 \
-		--alignIntronMax 50000 \
-		--outFilterIntronMotifs RemoveNoncanonicalUnannotated \
+		--alignIntronMax 1 \
 		--outFilterMatchNmin 8 \
 		--outFilterMatchNminOverLread 0.9 \
-		--outFileNamePrefix results/$samplename/fragments.large.filtered. \
-		--sjdbOverhang 100 \
-		--sjdbGTFfile /store/data/species/$species/annotation/UCSC_gene_parts_genename.gtf
-
+		--outFileNamePrefix results/$samplename/fragments.large.filtered.
+	
 	### ALIGN SMALL FRAGMENTS
 
 	STAR-2.5.2b \
-		--genomeDir data/genome/$species/ \
+		--genomeDir data/genome/dm3/ \
 		--readFilesIn results/$samplename/fragments.small.filtered.fa \
 		--readFilesCommand cat \
 		--runThreadN 12 \
 		--outSAMtype SAM \
 		--outSAMattributes All \
 		--outFilterMultimapScoreRange 0 \
-		--alignIntronMax 50000 \
-		--outFilterIntronMotifs RemoveNoncanonicalUnannotated \
+		--alignIntronMax 1 \
 		--outFilterMatchNmin 8 \
 		--outFilterMatchNminOverLread 0.9 \
 		--outFileNamePrefix results/$samplename/fragments.small.filtered. \
-		--sjdbOverhang 100 \
-		--sjdbGTFfile /store/data/species/$species/annotation/UCSC_gene_parts_genename.gtf \
 		--outFilterMultimapNmax 50
+	
 		
 	### 
 	### FILTERS 
